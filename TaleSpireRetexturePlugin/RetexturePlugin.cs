@@ -20,7 +20,7 @@ namespace LordAshes
         // Plugin info
         public const string Name = "Retexture Plug-In";
         public const string Guid = "org.lordashes.plugins.retexture";
-        public const string Version = "1.0.0.0";
+        public const string Version = "1.0.1.0";
 
         // Configuration
         private ConfigEntry<KeyboardShortcut> triggerKey { get; set; }
@@ -41,6 +41,9 @@ namespace LordAshes
 
             triggerKey = Config.Bind("Hotkeys", "Repaint Asset Activation", new KeyboardShortcut(KeyCode.X, KeyCode.RightControl));
             transformKey = Config.Bind("Hotkeys", "Transform (Recall) Repainted", new KeyboardShortcut(KeyCode.Y, KeyCode.RightControl));
+
+            // Subscrive to Stat Messaging requests (needed in case this is an initial board and not a board reload)
+            StatMessaging.Subscribe(RetexturePlugin.Guid, RequestHandler);
 
             // Post plugin on the TaleSpire main page
             StateDetection.Initialize(this.GetType());
