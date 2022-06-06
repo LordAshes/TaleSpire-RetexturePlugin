@@ -20,7 +20,7 @@ namespace LordAshes
         // Plugin info
         public const string Name = "Retexture Plug-In";
         public const string Guid = "org.lordashes.plugins.retexture";
-        public const string Version = "1.0.1.0";
+        public const string Version = "2.0.0.0";
 
         // Configuration
         private ConfigEntry<KeyboardShortcut> triggerKey { get; set; }
@@ -46,7 +46,7 @@ namespace LordAshes
             StatMessaging.Subscribe(RetexturePlugin.Guid, RequestHandler);
 
             // Post plugin on the TaleSpire main page
-            StateDetection.Initialize(this.GetType());
+            Utility.Initialize(this.GetType());
         }
 
         /// <summary>
@@ -70,26 +70,26 @@ namespace LordAshes
                 if (asset != null)
                 {
                     Material mat = null;
-                    Debug.Log("Seeking '"+ "Effect:" + asset.Creature.CreatureId+"'...");
-                    GameObject go = GameObject.Find("Effect:" + asset.Creature.CreatureId);
+                    Debug.Log("Seeking '"+ "Effect:" + asset.CreatureId+"'...");
+                    GameObject go = GameObject.Find("Effect:" + asset.CreatureId);
                     if (go!=null)
                     {
                         Debug.Log("Retexturing Effect");
-                        mat = FindMaterial(GameObject.Find("Effect:" + asset.Creature.CreatureId),"RETEXTURE_MAT");
+                        mat = FindMaterial(GameObject.Find("Effect:" + asset.CreatureId),"RETEXTURE_MAT");
                     }
                     else
                     {
                         Debug.Log("Retexturing Mini");
-                        mat = FindMaterial(asset.CreatureLoaders[0], "RETEXTURE_MAT");
+                        mat = FindMaterial(Utility.GetAssetObject(asset.CreatureId), "RETEXTURE_MAT");
                     }
                     SystemMessage.AskForTextInput("Replacement Texture...", "\r\nSource:", "Texture",
                     (source) =>
                     {
-                        StatMessaging.SetInfo(asset.Creature.CreatureId, RetexturePlugin.Guid, source);
+                        StatMessaging.SetInfo(asset.CreatureId, RetexturePlugin.Guid, source);
                     }, null, "Original",
                     () =>
                     {
-                        StatMessaging.ClearInfo(asset.Creature.CreatureId, RetexturePlugin.Guid);
+                        StatMessaging.ClearInfo(asset.CreatureId, RetexturePlugin.Guid);
                     }, "");
                 }
                 else
@@ -125,17 +125,17 @@ namespace LordAshes
                 Debug.Log("Request To Retexture " + change.cid + " To " + change.value);
                 CreatureBoardAsset asset = null;
                 CreaturePresenter.TryGetAsset(change.cid, out asset);
-                GameObject go = GameObject.Find("Effect:" + asset.Creature.CreatureId);
+                GameObject go = GameObject.Find("Effect:" + asset.CreatureId);
                 Material mat = null;
                 if (go != null)
                 {
                     Debug.Log("Retexturing Effect");
-                    mat = FindMaterial(GameObject.Find("Effect:" + asset.Creature.CreatureId), "RETEXTURE_MAT");
+                    mat = FindMaterial(GameObject.Find("Effect:" + asset.CreatureId), "RETEXTURE_MAT");
                 }
                 else
                 {
                     Debug.Log("Retexturing Mini");
-                    mat = FindMaterial(asset.CreatureLoaders[0], "RETEXTURE_MAT");
+                    mat = FindMaterial(Utility.GetAssetObject(asset.CreatureId), "RETEXTURE_MAT");
                 }
                 if (change.action!=StatMessaging.ChangeType.removed)
                 {
@@ -156,12 +156,12 @@ namespace LordAshes
         /// <param name="source">Source of the alternate texture</param>
         private void ApplyTexture(CreatureBoardAsset asset, Material mat, String source)
         {
-            if (!originalMaterials.ContainsKey(asset.Creature.CreatureId))
+            if (!originalMaterials.ContainsKey(asset.CreatureId))
             {
-                Debug.Log("Retexture Plugin: Storing orignal " + asset.Creature.Name + " material");
-                originalMaterials.Add(asset.Creature.CreatureId, mat.mainTexture);
+                Debug.Log("Retexture Plugin: Storing orignal " + asset.Name + " material");
+                originalMaterials.Add(asset.CreatureId, mat.mainTexture);
             }
-            Debug.Log("Retexture Plugin: Retexturing " + asset.Creature.Name + " main texture (" + mat.name + ":" + mat.mainTexture.name + ") with  " + source);
+            Debug.Log("Retexture Plugin: Retexturing " + asset.Name + " main texture (" + mat.name + ":" + mat.mainTexture.name + ") with  " + source);
             mat.mainTexture = LordAshes.FileAccessPlugin.Image.LoadTexture(source);
         }
 
@@ -172,10 +172,10 @@ namespace LordAshes
         /// <param name="mat">Material to be changed</param>
         private void RestoreTexture(CreatureBoardAsset asset, Material mat)
         {
-            Debug.Log("Retexture Plugin: Restoring " + asset.Creature.Name + " original material");
-            mat.mainTexture = originalMaterials[asset.Creature.CreatureId];
-            Debug.Log("Retexture Plugin: Removing stored material for " + asset.Creature.Name);
-            originalMaterials.Remove(asset.Creature.CreatureId);
+            Debug.Log("Retexture Plugin: Restoring " + asset.Name + " original material");
+            mat.mainTexture = originalMaterials[asset.CreatureId];
+            Debug.Log("Retexture Plugin: Removing stored material for " + asset.Name);
+            originalMaterials.Remove(asset.CreatureId);
         }
 
         /// <summary>
