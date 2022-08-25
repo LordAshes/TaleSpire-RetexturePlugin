@@ -20,7 +20,7 @@ namespace LordAshes
         // Plugin info
         public const string Name = "Retexture Plug-In";
         public const string Guid = "org.lordashes.plugins.retexture";
-        public const string Version = "2.0.0.0";
+        public const string Version = "2.1.0.0";
 
         // Configuration
         private ConfigEntry<KeyboardShortcut> triggerKey { get; set; }
@@ -37,7 +37,7 @@ namespace LordAshes
         /// </summary>
         void Awake()
         {
-            UnityEngine.Debug.Log("Lord Ashes Rextexture Plugin Active.");
+            UnityEngine.Debug.Log("Retexture Plugin: " + this.GetType().AssemblyQualifiedName + " Active.");
 
             triggerKey = Config.Bind("Hotkeys", "Repaint Asset Activation", new KeyboardShortcut(KeyCode.X, KeyCode.RightControl));
             transformKey = Config.Bind("Hotkeys", "Transform (Recall) Repainted", new KeyboardShortcut(KeyCode.Y, KeyCode.RightControl));
@@ -57,9 +57,9 @@ namespace LordAshes
         {
             if (transformKey.Value.IsUp())
             {
-                Debug.Log("Resseting '" + RetexturePlugin.Guid + "' Stat Messages...");
+                Debug.Log("Retexture Plugin: Resetting '" + RetexturePlugin.Guid + "' Stat Messages...");
                 StatMessaging.Reset(RetexturePlugin.Guid);
-                Debug.Log("Subscribing To '" + RetexturePlugin.Guid + "' Stat Messages...");
+                Debug.Log("Retexture Plugin: Subscribing To '" + RetexturePlugin.Guid + "' Stat Messages...");
                 StatMessaging.Subscribe(RetexturePlugin.Guid, RequestHandler);
             }
 
@@ -69,19 +69,6 @@ namespace LordAshes
                 CreaturePresenter.TryGetAsset(LocalClient.SelectedCreatureId, out asset);
                 if (asset != null)
                 {
-                    Material mat = null;
-                    Debug.Log("Seeking '"+ "Effect:" + asset.CreatureId+"'...");
-                    GameObject go = GameObject.Find("Effect:" + asset.CreatureId);
-                    if (go!=null)
-                    {
-                        Debug.Log("Retexturing Effect");
-                        mat = FindMaterial(GameObject.Find("Effect:" + asset.CreatureId),"RETEXTURE_MAT");
-                    }
-                    else
-                    {
-                        Debug.Log("Retexturing Mini");
-                        mat = FindMaterial(Utility.GetAssetObject(asset.CreatureId), "RETEXTURE_MAT");
-                    }
                     SystemMessage.AskForTextInput("Replacement Texture...", "\r\nSource:", "Texture",
                     (source) =>
                     {
@@ -122,20 +109,20 @@ namespace LordAshes
         {
             foreach(StatMessaging.Change change in changes)
             {
-                Debug.Log("Request To Retexture " + change.cid + " To " + change.value);
+                Debug.Log("Retexture Plugin: Request To Retexture " + change.cid + " To " + change.value);
                 CreatureBoardAsset asset = null;
                 CreaturePresenter.TryGetAsset(change.cid, out asset);
                 GameObject go = GameObject.Find("Effect:" + asset.CreatureId);
                 Material mat = null;
                 if (go != null)
                 {
-                    Debug.Log("Retexturing Effect");
+                    Debug.Log("Retexture Plugin: Retexturing Effect");
                     mat = FindMaterial(GameObject.Find("Effect:" + asset.CreatureId), "RETEXTURE_MAT");
                 }
                 else
                 {
-                    Debug.Log("Retexturing Mini");
-                    mat = FindMaterial(Utility.GetAssetObject(asset.CreatureId), "RETEXTURE_MAT");
+                    Debug.Log("Retexture Plugin: Retexturing Mini");
+                    mat = FindMaterial(Utility.GetAssetLoader(asset.CreatureId), "RETEXTURE_MAT");
                 }
                 if (change.action!=StatMessaging.ChangeType.removed)
                 {
@@ -189,27 +176,27 @@ namespace LordAshes
             List<Renderer> renderers = new List<Renderer>();
             foreach (MeshRenderer mr in asset.GetComponentsInChildren<MeshRenderer>())
             {
-                Debug.Log("Adding MeshRenderer " + mr.name);
+                Debug.Log("Retexture Plugin: Adding MeshRenderer " + mr.name);
                 renderers.Add(mr);
             }
             foreach (SkinnedMeshRenderer mr in asset.GetComponentsInChildren<SkinnedMeshRenderer>())
             {
-                Debug.Log("Adding SkinnedMeshRenderer " + mr.name);
+                Debug.Log("Retexture Plugin: Adding SkinnedMeshRenderer " + mr.name);
                 renderers.Add(mr);
             }
             foreach (Renderer rend in renderers)
             {
                 foreach (Material mat in rend.materials)
                 {
-                    Debug.Log("Looking At Material " + rend.name + "." + mat.name);
+                    Debug.Log("Retexture Plugin: Looking At Material " + rend.name + "." + mat.name);
                     if (mat.name.Contains(name)) 
                     {
-                        Debug.Log("Found " + rend.name + "." + mat.name);
+                        Debug.Log("Retexture Plugin: Found " + rend.name + "." + mat.name);
                         return mat; 
                     }
                 }
             }
-            Debug.Log("Using Default/Null");
+            Debug.Log("Retexture Plugin: Using Default/Null");
             return (useDefault) ? renderers[0].material : null;
         }
 
@@ -221,31 +208,7 @@ namespace LordAshes
         /// <returns>Material</returns>
         private Material FindMaterial(AssetLoader asset, string name, bool useDefault = true)
         {
-            List<Renderer> renderers = new List<Renderer>();
-            foreach (MeshRenderer mr in asset.GetComponentsInChildren<MeshRenderer>())
-            {
-                Debug.Log("Adding MeshRenderer " + mr.name);
-                renderers.Add(mr);
-            }
-            foreach (SkinnedMeshRenderer mr in asset.GetComponentsInChildren<SkinnedMeshRenderer>())
-            {
-                Debug.Log("Adding SkinnedMeshRenderer " + mr.name);
-                renderers.Add(mr);
-            }
-            foreach (Renderer rend in renderers)
-            {
-                foreach (Material mat in rend.materials)
-                {
-                    Debug.Log("Looking At Material " + rend.name+"."+mat.name);
-                    if (mat.name.Contains(name))
-                    {
-                        Debug.Log("Found " + rend.name + "." + mat.name);
-                        return mat; 
-                    }
-                }
-            }
-            Debug.Log("Using Default/Null");
-            return (useDefault) ? renderers[0].material : null;
+            return FindMaterial(asset.gameObject, name, useDefault);
         }
     }
 }
