@@ -9,6 +9,7 @@ the contents of the flag.
 
 ## Change Log
 ```
+2.2.0: Added video support
 2.1.0: Improved hierarchy traversing code to work with different asset structures
 2.0.0: Fix for BR HF Integration update
 1.0.1: Added subscribe on start so that RCTRL+Y is not necessary if making a new board
