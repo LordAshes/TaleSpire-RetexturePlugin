@@ -1,15 +1,11 @@
-﻿using UnityEngine;
-using UnityEngine.Rendering.PostProcessing;
+using UnityEngine;
 using BepInEx;
-using Bounce.Unmanaged;
 using System.Linq;
-using TMPro;
-using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
-using Newtonsoft.Json;
-using System.Net;
+using SRF;
+using UnityEngine.Video;
 
 namespace LordAshes
 {
@@ -20,7 +16,7 @@ namespace LordAshes
         // Plugin info
         public const string Name = "Retexture Plug-In";
         public const string Guid = "org.lordashes.plugins.retexture";
-        public const string Version = "2.1.0.0";
+        public const string Version = "2.2.0.0";
 
         // Configuration
         private ConfigEntry<KeyboardShortcut> triggerKey { get; set; }
@@ -148,6 +144,26 @@ namespace LordAshes
                 Debug.Log("Retexture Plugin: Storing orignal " + asset.Name + " material");
                 originalMaterials.Add(asset.CreatureId, mat.mainTexture);
             }
+
+            var go = GameObject.Find("Effect:" + asset.CreatureId);
+            if (go == null)
+            {
+                go = Utility.GetAssetLoader(asset.CreatureId);
+            }
+
+            if (source.EndsWith(".mp4") || source.EndsWith(".mov;") || source.EndsWith(".webm;") || source.EndsWith(".wmv;"))
+            {
+                ApplyVideo(go, "RETEXTURE_MAT", source); 
+                return;
+            }
+
+            go.RemoveComponentIfExists<VideoPlayer>();
+            var children = go.GetComponentsInChildren<VideoPlayer>().Select(v => v.gameObject);
+            foreach (var child in children)
+            {
+                child.RemoveComponentIfExists<VideoPlayer>();
+            }
+
             Debug.Log("Retexture Plugin: Retexturing " + asset.Name + " main texture (" + mat.name + ":" + mat.mainTexture.name + ") with  " + source);
             mat.mainTexture = LordAshes.FileAccessPlugin.Image.LoadTexture(source);
         }
@@ -159,6 +175,14 @@ namespace LordAshes
         /// <param name="mat">Material to be changed</param>
         private void RestoreTexture(CreatureBoardAsset asset, Material mat)
         {
+            var go = asset.gameObject;
+            go.RemoveComponentIfExists<VideoPlayer>();
+            var children = go.GetComponentsInChildren<VideoPlayer>().Select(v => v.gameObject);
+            foreach (var child in children)
+            {
+                child.RemoveComponentIfExists<VideoPlayer>();
+            }
+
             Debug.Log("Retexture Plugin: Restoring " + asset.Name + " original material");
             mat.mainTexture = originalMaterials[asset.CreatureId];
             Debug.Log("Retexture Plugin: Removing stored material for " + asset.Name);
@@ -198,6 +222,52 @@ namespace LordAshes
             }
             Debug.Log("Retexture Plugin: Using Default/Null");
             return (useDefault) ? renderers[0].material : null;
+        }
+
+        /// <summary>
+        /// Finds GameObject and by renderer's material name then applies video
+        /// </summary>
+        /// <param name="asset">Asset whose children are searched</param>
+        /// <param name="name">Name of the material</param>
+        /// <param name="source">The source of the video</param>
+        private void ApplyVideo(GameObject asset, string name, string source)
+        {
+            List<Renderer> renderers = new List<Renderer>();
+            foreach (MeshRenderer mr in asset.GetComponentsInChildren<MeshRenderer>())
+            {
+                Debug.Log("Retexture Plugin: Adding MeshRenderer " + mr.name);
+                renderers.Add(mr);
+            }
+            foreach (SkinnedMeshRenderer mr in asset.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                Debug.Log("Retexture Plugin: Adding SkinnedMeshRenderer " + mr.name);
+                renderers.Add(mr);
+            }
+            foreach (Renderer rend in renderers)
+            {
+                foreach (Material mat in rend.materials)
+                {
+                    Debug.Log("Retexture Plugin: Looking At Material " + rend.name + "." + mat.name);
+                    if (mat.name.Contains(name))
+                    {
+                        Debug.Log("Retexture Plugin: Found " + rend.name + "." + mat.name);
+
+                        var go = rend.gameObject;
+
+                        VideoPlayer player;
+                        if (!go.TryGetComponent(out player))
+                            player = go.AddComponent<VideoPlayer>();
+                        player.playOnAwake = true;
+                        player.source = VideoSource.Url;
+                        if (!source.StartsWith("http"))
+                            source = "file://" + source;
+
+                        player.url = source;
+                        player.isLooping = true;
+                        return;
+                    }
+                }
+            }
         }
 
         /// <summary>
